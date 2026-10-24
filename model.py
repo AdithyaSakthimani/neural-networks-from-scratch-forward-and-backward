@@ -24,7 +24,11 @@ def numerical_gradient(f, x, eps=1e-5):
         m, n = x.shape
         for i in range ( m ) : 
             for j in range ( n ) : 
-                grad[i][j] = (f(x[i][j] + eps ) - f(x[i][j] - eps )) / ( 2 * eps )
+                x_plus = x.copy()
+                x_minus = x.copy()
+                x_plus[i][j] += eps 
+                x_minus[i][j] -= eps 
+                grad[i][j] = (f(x_plus) - f(x_minus)) / ( 2 * eps )
     return grad
 
 # Step 2 - gradient_check
@@ -42,8 +46,37 @@ def gradient_check(analytic_grad, numeric_grad, tol=1e-5):
     res = np.max(e) 
     return res
 
-# Step 3 - make_dense (not yet solved)
-# TODO: implement
+# Step 3 - make_dense
+import numpy as np
+
+def make_dense(in_dim, out_dim, weight_init_fn):
+    W, b = weight_init_fn(in_dim, out_dim)
+    params = {"W": W, "b": b}
+
+    def forward(x):
+        y = x @ params["W"] + params["b"]
+        return y, x
+
+    def backward(dout, cache):
+        x = cache
+
+        if x.ndim == 1:
+            dx = params["W"] @ dout
+            dW = np.outer(x, dout)
+            db = dout
+        else:
+            dx = dout @ params["W"].T
+            dW = x.T @ dout
+            db = np.sum(dout, axis=0)
+
+        grads = {"W": dW, "b": db}
+        return dx, grads
+
+    return {
+        "params": params,
+        "forward": forward,
+        "backward": backward
+    }
 
 # Step 4 - make_activation (not yet solved)
 # TODO: implement
